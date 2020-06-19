@@ -13,7 +13,7 @@ BOT_ECHO_RANGE = 300
 CHUNK_SIZE = 16 * (2 * BOT_R / CELL_PX_SIZE)
 
 SYMBOL_TO_BIT_DICT = {'/': 0b0000,
-                      ' ': 0b0001,#qweqweqweqweqweqweqwe
+                      ' ': 0b0001,
                       '#': 0b0010,
                       'X': 0b0101,
                       '?': 0b0100,
