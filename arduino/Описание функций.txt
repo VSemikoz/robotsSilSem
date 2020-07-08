@@ -1,0 +1,188 @@
+Функция GoToTarget
+для работы надо объявить следующие переменные
+const int in1 = 49; 
+const int in2 = 51; 
+const int in3 = 50; 
+const int in4 = 48; 
+int ENB1 = 7;
+int ENA2 =6; все цифры это цифровые порты на ардуино
+
+ПРОПИСАТЬ в Setup
+
+// Настройки для мотора
+pinMode(in1, OUTPUT); // выход на L298n
+pinMode(in2, OUTPUT); // выход на L298n
+pinMode(in3, OUTPUT); // выход на L298n
+pinMode(in4, OUTPUT); // выход на L298n
+pinMode (ENB1, OUTPUT);
+pinMode (ENA2, OUTPUT);
+pinMode(ENC_PIN1, INPUT);
+pinMode(ENC_PIN2, INPUT);
+
+in1 и in2 отвечают за левое колесо
+in3 и in4 отвечают за правое колесо 
+ENB 1 отвечает за включение левого мотора(то есть при подачи на этот вывод Сигнала 5В мотор будет включен)
+ENB 2 отвечает за включение правого мотора(то есть при подачи на этот вывод Сигнала 5В мотор будет включен)
+LOW - обозначет подачу Низкого сигнала(0 Вольт)
+HIGH - обозначет подачу высокого сигнала(5 Вольт)
+Цифры 150 обозначают скорость вращения моторов, работает по шим сигналу.
+
+В данной конфигурации машинка поедет прямо. Но если радом с ними поменять значения на  
+in1-HIGH 
+in2-LOW 
+in3-HIGH 
+in4-LOW 
+
+то машинка поедет назад.
+
+void GoToTarget(){
+  digitalWrite(in1,LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+  analogWrite(ENB1,150);
+  analogWrite(ENA2,150);
+}
+
+Функция RotateToTarget
+На вход этой функции поступает Значение на какой угол повернуться.
+Если угол равен -180 или -90, то машинка вращает левое колесо назад а правое вперед.
+Если угол равен 180 или 90, то машинка вращает левое колесо вперед а правое назад.
+на если просто использовать эту функцию то машинка будет постоянно вращаться. Поэтому нужный задержки для повортов на нужный угол и функция остановки всех колес(ReadyToGetTarget).
+
+Здесь представлен фрагмент кода работы  функции поворота. здесь Delay(задержка перед выполнением следующей строчки кода) выбиралась опытным путем.
+ RotateToTarget(Ugol);
+ if(Ugol==-90)delay(400);
+ if(Ugol==90)delay(400);
+ if(Ugol==-180)delay(700);
+ if(Ugol==180)delay(700);
+ ReadyToGetTarget();
+ Ugol = 0;
+
+int RotateToTarget(int Ugol)
+{ 
+  if(Ugol==-180 || Ugol==-90 ){ 
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH); 
+  analogWrite(ENB1,150);
+  analogWrite(ENA2,150);
+  }
+  if(Ugol==180 || Ugol==90){  
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+  analogWrite(ENB1,150);
+  analogWrite(ENA2,150);
+  }
+}
+
+Функция ReadyToGetTarget()
+Эта функция предназначена для полной остановки колес. То есть по всем 4 проводам идет низкий сигнал(0 Вольт) и колеса не двигаются.
+
+void ReadyToGetTarget(){          
+ 
+digitalWrite(in1, LOW);
+digitalWrite(in2, LOW);
+digitalWrite(in3, LOW);
+digitalWrite(in4, LOW);
+analogWrite(ENB1,75);
+analogWrite(ENA2,75);
+}
+
+Функции TurnServo и turn_to
+Предназначены для ПЛАВНОГО повората сервопривода с датчиком.
+Для работы данной функции нужно объявить следующее
+#define MAX_ANGLE 140   // максимальный угол поворота сервы 
+#define MIN_ANGLE 50      // минимальный угол поворота сервы
+#define STEP_DELAY 15  //переменная для работы задержки
+#include <GyverHacks.h> // библиотека с помощью которой реализован плавный поворот
+GTimer stepTimer(STEP_DELAY);
+#include <Servo.h> //Библиотека для работы с самим серво приводом
+Servo servo; // Объявление переменной сервык котрой мы будем обращатся.
+boolean direct;
+boolean hold_flag;
+boolean next;
+int angle = MIN_ANGLE; // переменная угла сервы
+
+Это прописать в Setup
+// настройки для Сервы
+servo.attach(10); // Цифровой выход к котрой подключена Серва
+servo.write(MIN_ANGLE); // Команда говорит повернуться серво приводу на минимальный угол который мы указали выше( выполниться один раз).
+
+ПЕРЕМЕННУЮ angle ИЗ ФУНКЦИИ turn_to МОЖНО ИСПОЛЬЗОВАТЬ ДЛЯ ПОЛУЧЕНИ ЯЗНАЧЕНИЯ ТЕКУЩЕГО УГЛА СЕРВО ПРИВОДА.
+
+void TurnServo(){
+  if (direct) {             // движемся в прямом направлении
+    if (angle < MAX_ANGLE)
+      turn_to(MAX_ANGLE);   // плавный поворот
+    else {
+      direct = false;       // смена направления
+      delay(50);            // задержка в крайнем положении
+    }
+  }
+  else {                    // движемся в обратном направлении
+    if (angle > MIN_ANGLE)
+      turn_to(MIN_ANGLE);   // плавный поворот
+    else {
+      direct = true;        // смена направления
+      delay(50);            // задержка в крайнем положении
+    }
+  }
+}
+void turn_to(byte to_angle) {// Функция для плавного поворота сервы
+  if (stepTimer.isReady()) {
+    if (angle < to_angle) angle++;
+    else if (angle > to_angle) angle--;
+    else hold_flag = true;
+    servo.write(angle);
+    next = true;
+  }
+}
+
+
+
+
+фУНКЦИЯ ИЗМЕРЕНИЯ РАССТОЯНИ ДО ЦЕЛИ
+для ее использования надо объявить следующее
+#define Trig 15 //номер цирового порта для подключения излучателя
+#define Echo 14 //номер цирового порта для подключения приемника
+#include <NewPing.h> // библиотека для работы с Ультразвуковым датчиком 
+#define MAX_DISTANCE 200 // максимальное расстояние которое будет измерять датчик.
+
+NewPing sonar(Trig, Echo, MAX_DISTANCE);
+
+Прописать в Setup
+pinMode(Trig, OUTPUT); // выход
+pinMode(Echo, INPUT); // вход
+
+distance = sonar.ping_cm();// дананая строка сразу меряет расстояние в см.
+
+У датчика есть косяк Иногда он выдает 0
+поэтому для коректной работы на этот 0 исключать.
+
+Функция Encoder
+Предназначена для исмерения пройденного расстояния . Переменная revolutions содержит количество импульсов пройденное машинкой. Для получения надо будет эксперементальным путем узнать количество импульсов на 1 метр и посчитать.
+void Encoder(){
+  uint8_t code = readEncoder(ENC_PIN1, ENC_PIN2);
+  if (code == 0)
+  {
+    if (previous_code == 3)
+      turned(FORWARD);
+    else if (previous_code == 1)
+      turned(BACKWARD);}
+  previous_code = code;
+}
+void turned(int new_direction)
+{
+  if (new_direction != direction)
+  {
+    revolutions = 0;
+  }
+  else
+    ++revolutions;
+
+  direction = new_direction;
+}

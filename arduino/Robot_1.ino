@@ -91,11 +91,11 @@ void loop(){
       Encoder();
       distance = sonar.ping_cm();
       Serial.println("None");}
-      Serial.println("Расстояние до препядствия:");
-      Serial.println(distance);
-      Serial.println("Пройденное расстояние:");
-      Serial.println(revolutions);
-      distance=100;
+    Serial.println("Расстояние до препядствия:");
+    Serial.println(distance);
+    Serial.println("Пройденное расстояние:");
+    Serial.println(revolutions);
+    distance=100;
       revolutions=0;
       ReadyToGetTarget();
       number=0;}
