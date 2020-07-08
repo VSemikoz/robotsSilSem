@@ -1,19 +1,26 @@
 import map_storage
 import serial
+import threading
 import time
+from raspberry.scaner_thread import ScannerThread
 from command_string import CommandString as CS
 
 UTF8 = "utf-8"
+
 
 class BotControl:
     def __init__(self):
         self.map = map_storage
         self.usb_connection = serial.Serial('/dev/ttyUSB0', 9600)
-        self.scanner_thread = None  # TODO thread to get data from scanner, compute them and map update
+        self.scanner = ScannerThread()
         self.cont = True
 
     def initialize(self):
         self.usb_connection.open()
+        self.scanner.start_scanner()
+        scanner_thread = threading.Thread(target=self.scanner.scanner_thread, args=(self.usb_connection,))
+        scanner_thread.start()
+        scanner_thread.join()
 
     def start(self):
         self.initialize()
@@ -30,6 +37,7 @@ class BotControl:
             print("performing moving on %s" % command.parameters[0])
             self.perform_moving_forward(sequence_of_bits)
         if command.command_name == "quit":
+            self.scanner.start_scanner()
             self.cont = False
 
     def perform_rotate(self, sequence_of_bits):
