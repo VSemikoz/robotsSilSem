@@ -11,26 +11,26 @@ GTimer stepTimer(STEP_DELAY);
 #include <Servo.h>
 #include <NewPing.h>
 
-NewPing sonar(Trig, Echo, MAX_DISTANCE);
-Servo servo;
-enum { ENC_PIN1 = 28, ENC_PIN2 = 30 };
-enum { FORWARD = 1, BACKWARD = -1 };
-const int in1 = 49; 
-const int in2 = 51; 
-const int in3 = 50; 
-const int in4 = 48; 
-boolean direct;
-boolean hold_flag;
-boolean next;
-boolean recievedFlag;
-int ENB1 = 7;
-int ENA2 =6;
-int b=0;
-int c=0; 
-int Ugol=0;
-int angle = MIN_ANGLE;
-int number=0;
-unsigned int distance = 100;
+NewPing sonar(Trig, Echo, MAX_DISTANCE);// переменная для датчика расстояния
+Servo servo;// переменная для серво привода
+enum { ENC_PIN1 = 28, ENC_PIN2 = 30 };// переменная для Энкодора
+enum { FORWARD = 1, BACKWARD = -1 };// переменная для Энкодора
+const int in1 = 49; // подключения выводов моторов к ардуине, это те порты куда подключено управление моторами
+const int in2 = 51; // подключения выводов моторов к ардуине, это те порты куда подключено управление моторами
+const int in3 = 50; // подключения выводов моторов к ардуине, это те порты куда подключено управление моторами
+const int in4 = 48; // подключения выводов моторов к ардуине, это те порты куда подключено управление моторами
+boolean direct;// переменный для поворота сервопривода НЕ ТРОГАТЬ
+boolean hold_flag;// переменный для поворота сервопривода НЕ ТРОГАТЬ
+boolean next;// переменный для поворота сервопривода НЕ ТРОГАТЬ
+boolean recievedFlag;// переменная для 2 функции офлаг о получении данных
+int ENB1 = 7;// переменная для управления скоростью моторов и порт к которому оно подключено
+int ENA2 =6;// переменная для управления скоростью моторов и порт к которому оно подключено
+int b=0;// лишнии переменные , были какие-то эксперементы 
+int c=0; // лишнии переменные , были какие-то эксперементы 
+int Ugol=0;// Переменная для угла поворота машинки
+int angle = MIN_ANGLE;// перменная для угла поворота серво привода НЕ ТРОГАТЬ
+int number=0; // переменная для Выбора функции (действия что будет делать машинка)
+unsigned int distance = 100;// перменная для пройденного расстояния НЕ ТРОГАТЬ
 int vremia;
 int direction = FORWARD;
 String a="";
@@ -41,7 +41,7 @@ uint8_t previous_code = 0;
 
 void setup() 
 {  
-Serial.begin(9600);
+Serial.begin(9600); // Объявляю скорость работы сериал порт
 // настройки для Сервы
 servo.attach(10);
 servo.write(MIN_ANGLE);
@@ -49,56 +49,56 @@ servo.write(MIN_ANGLE);
 pinMode(Trig, OUTPUT); // выход
 pinMode(Echo, INPUT); // вход
 // Настройки для мотора
-pinMode(in1, OUTPUT); // выход на L298n
-pinMode(in2, OUTPUT); // выход на L298n
-pinMode(in3, OUTPUT); // выход на L298n
-pinMode(in4, OUTPUT); // выход на L298n
-pinMode (ENB1, OUTPUT);
-pinMode (ENA2, OUTPUT);
-pinMode(ENC_PIN1, INPUT);
-pinMode(ENC_PIN2, INPUT);
+pinMode(in1, OUTPUT); // выход на L298n(управление моторов
+pinMode(in2, OUTPUT); // выход на L298n(управление моторов
+pinMode(in3, OUTPUT); // выход на L298n(управление моторов
+pinMode(in4, OUTPUT); // выход на L298n(управление моторов
+pinMode (ENB1, OUTPUT);// выход на управление скоростью моторов
+pinMode (ENA2, OUTPUT);// выход на управление скоростью моторов
+pinMode(ENC_PIN1, INPUT);// выход на энкодоры
+pinMode(ENC_PIN2, INPUT);// выход на энкодоры
 } 
 
 void loop(){
-  while (Serial.available() == 0){}
-  number=Serial.read()-'0';
-  if(number == 1){ReadyToGetTarget();number=0;}
-  if(number == 2){while (Serial.available() == 0){}
-                         while (Serial.available() > 0) { 
-                         a=Serial.readString();
-                         char *z = new char[10];
-                         a.toCharArray(z,10);    
-                         Ugol=atoi(z);        // забиваем строку принятыми данными
-                         recievedFlag = true;
-                         z="";// поднять флаг что получили данные
+  while (Serial.available() == 0){} // не помню что за говно но оно надо
+  number=Serial.read()-'0'; // получение номера команды. Номер 1 Стоять на месте, Номер 2 Повернуться, номер 3 ехать прямо
+  if(number == 1){ReadyToGetTarget();number=0;} // Команда номер один
+  if(number == 2){while (Serial.available() == 0){} // Команда номер 2 поворот на угол. ждем данных из Serial port
+                         while (Serial.available() > 0) { //Если данные больше 0 то ссчитываем строку
+                         a=Serial.readString();// считывание строки // забиваем строку принятыми данными
+                         char *z = new char[10]; //Создание масива для перевода
+                         a.toCharArray(z,10);    //Перевод символных данных в тип Char
+                         Ugol=atoi(z);           //Перевод Char данных в INT данные
+                         recievedFlag = true;    //// поднять флаг что получили данные
+                         z="";// отчистка вспомогательного масива
                           delay(2);                              // ЗАДЕРЖКА. Без неё работает некорректно!
                                  }
                          if (recievedFlag) {                      // если данные получены
-                              Serial.println(Ugol);
-                               RotateToTarget(Ugol);
-                               if(Ugol==-90)delay(400);
-                               if(Ugol==90)delay(400);
-                               if(Ugol==-180)delay(700);
-                               if(Ugol==180)delay(700);
-                               ReadyToGetTarget();
-                               Ugol = 0;
-                               a="";// очистить
-                               recievedFlag = false;}number=0;b=0;}
-  if(number == 3){
-    while(distance>15 || distance==0){
-      GoToTarget();
-      TurnServo();
-      Encoder();
-      distance = sonar.ping_cm();
-      Serial.println("None");}
-      Serial.println("Расстояние до препядствия:");
+                              Serial.println(Ugol); // напечатать угол в монитор порта для визуально контроля
+                               RotateToTarget(Ugol); // функция поворота на угол. все функции в низу
+                               if(Ugol==-90)delay(400);// если угол равен -90 то время выполнения команды 400 мс
+                               if(Ugol==90)delay(400);// если угол равен 90 то время выполнения команды 400 мс
+                               if(Ugol==-180)delay(700);// если угол равен -180 то время выполнения команды 700 мс
+                               if(Ugol==180)delay(700);// если угол равен 180 то время выполнения команды 700 мс
+                               ReadyToGetTarget(); // функция для остановки машинки 
+                               Ugol = 0; // обнуление переменной угол
+                               a="";// очистка масива приема данных
+                               recievedFlag = false;}number=0;b=0;} // сброс флаг, высставление переменной обозначающй номер команды в 0
+  if(number == 3){// 3 команда ехать прямо
+    while(distance>15 || distance==0){ // пока дистанция до препятсвия больше 15 см или равняеться 0 (датчик глючит иногда 0 показывает)
+      GoToTarget();// функция ехать прямо
+      TurnServo();// функция поворота серво привода на нем стоит датчик
+      Encoder();// функция считывания пройденного расстояния  по энкодору
+      distance = sonar.ping_cm(); // переменная дистанции до препядствия 
+      Serial.println("None");}// это лишнее
+      Serial.println("Расстояние до препядствия:");// отправка данных о пройденном расстоянии и расстоянии до цели
       Serial.println(distance);
       Serial.println("Пройденное расстояние:");
       Serial.println(revolutions);
-      distance=100;
-      revolutions=0;
-      ReadyToGetTarget();
-      number=0;}
+      distance=100;// задание начальных значений переменным о дистанции до цели 
+      revolutions=0;// пройденное расстояние
+      ReadyToGetTarget();// функция остановки на месте
+      number=0;}// обнуление номера действия.
 }
 void TurnServo(){
   if (direct) {             // движемся в прямом направлении
